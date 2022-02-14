@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 
 import Header from '../../components/Header';
 import api from '../../services/api';
@@ -7,45 +7,49 @@ import ModalAddFood from '../../components/ModalAddFood';
 import ModalEditFood from '../../components/ModalEditFood';
 import { FoodsContainer } from './styles';
 
-class Dashboard extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      foods: [],
-      editingFood: {},
-      modalOpen: false,
-      editModalOpen: false,
+interface FoodInterface {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  available: boolean;
+  image: string;
+}
+
+const Dashboard = (): JSX.Element => {
+  const [foods, setFoods] = useState<FoodInterface[]>();
+  const [editingFood, setEditingFood] = useState();
+  const [modalOpen, setModalOpen] = useState();
+  const [editModalOpen, setEditModalOpen] = useState();
+
+  useEffect(() => {
+    async function loadFoods() {
+      const { data: response } = await api.get<FoodInterface[]>('/foods');
+
+      setFoods(response);
     }
-  }
 
-  async componentDidMount() {
-    const response = await api.get('/foods');
+    loadFoods();
+  }, []);
 
-    this.setState({ foods: response.data });
-  }
-
-  handleAddFood = async food => {
-    const { foods } = this.state;
-
+  async function handleAddFood(food: FoodInterface) {
     try {
-      const response = await api.post('/foods', {
+      const { data: response } = await api.post('/foods', {
         ...food,
         available: true,
       });
 
-      this.setState({ foods: [...foods, response.data] });
+      setFoods([ foods, response ]);
     } catch (err) {
       console.log(err);
     }
   }
 
-  handleUpdateFood = async food => {
-    const { foods, editingFood } = this.state;
-
+  async function handleUpdateFood(food: FoodInterface) {
     try {
-      const foodUpdated = await api.put(
-        `/foods/${editingFood.id}`,
-        { ...editingFood, ...food },
+      const { data: foodUpdated } = await api.put(`/foods/${editingFood.id}`, { 
+        ...editingFood, 
+        ...food },
       );
 
       const foodsUpdated = foods.map(f =>
